@@ -1,0 +1,13 @@
+name: PR Terraform Check
+
+on:
+  pull_request:
+    paths:
+      - '**.tf'
+      - '**.tfvars'
+
+jobs:
+  terraform-fmt:
+    uses: thecloudsolutions/github-actions/.github/workflows/reusable/terraform/fmt.yml@main
+    with:
+      terraform-directory: .
