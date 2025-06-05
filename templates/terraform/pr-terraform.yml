@@ -8,6 +8,6 @@ on:
 
 jobs:
   terraform-fmt:
-    uses: thecloudsolutions/github-actions/.github/workflows/reusable/terraform/fmt.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/fmt.yml@main
     with:
       terraform-directory: .
