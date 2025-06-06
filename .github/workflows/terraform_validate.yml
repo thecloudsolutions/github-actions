@@ -24,9 +24,16 @@ jobs:
 
       - name: Run terraform validate recursively
         run: |
-          find "${{ inputs.terraform-directory }}" -type d | while read dir; do
+          find . -type d | while read dir; do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
-              echo "📁 Validating in $dir"
-              (cd "$dir" && terraform init -backend=false -input=false > /dev/null 2>&1 && terraform validate -no-color)
+              echo "Validating in $dir"
+              (
+                cd "$dir"
+                terraform init -backend=false -input=false > /dev/null 2>&1 || exit 0
+                terraform validate -no-color || {
+                  echo "Validation failed in $dir"
+                  exit 1
+                }
+              )
             fi
           done
