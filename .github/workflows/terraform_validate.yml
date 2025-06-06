@@ -9,8 +9,8 @@ on:
         default: "."
 
 jobs:
-  terraform-fmt:
-    name: Run terraform fmt
+  terraform-validate:
+    name: Run terraform validate
     runs-on: ubuntu-latest
 
     steps:
@@ -23,4 +23,4 @@ jobs:
           terraform_version: 1.5.5
 
       - name: Run terraform validate
-        run: terraform fmt -recursive ${{ inputs.terraform-directory }}
+        run: terraform validate -no-color "${{ inputs.terraform-directory }}"

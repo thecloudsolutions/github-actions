@@ -1,4 +1,4 @@
-name: Terraform fmt
+name: Terraform FMT
 
 on:
   workflow_call:
@@ -23,4 +23,4 @@ jobs:
           terraform_version: 1.5.5
 
       - name: Run terraform fmt
-        run: terraform fmt -recursive ${{ inputs.terraform-directory }}
+        run: terraform fmt -recursive "${{ inputs.terraform-directory }}"
