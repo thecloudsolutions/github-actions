@@ -21,7 +21,7 @@ jobs:
         uses: terraform-linters/setup-tflint@v4
 
       - name: Copy .tflint.hcl config
-        run: cp configs/tflint/.tflint.hcl .tflint.hcl
+        run: cp configs/.tflint.hcl .tflint.hcl
 
       - name: Run TFLint recursively
         run: |
