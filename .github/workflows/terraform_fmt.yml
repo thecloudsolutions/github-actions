@@ -1,4 +1,4 @@
-name: Terraform FMT
+name: Terraform fmt
 
 on:
   workflow_call:

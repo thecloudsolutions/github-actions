@@ -1,0 +1,33 @@
+name: Terraform Checkov
+
+on:
+  workflow_call:
+    inputs:
+      terraform-directory:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  checkov:
+    name: Run Checkov
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Run Checkov with custom policy
+        run: |
+          checkov -d "${{ inputs.terraform-directory }}" \
+            --external-checks-dir configs/checkov \
+            --compact \
+            --download-external-modules true
