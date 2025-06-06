@@ -32,11 +32,14 @@ jobs:
               echo "Validating in $dir"
               (
                 cd "$dir"
-                terraform init -backend=false -input=false > /dev/null 2>&1 || exit 0
-                terraform validate -no-color || {
-                  echo "Validation failed in $dir"
-                  exit 1
-                }
+          
+                echo "Running terraform init in $dir"
+                terraform init -backend=false -input=false
+          
+                echo "Running terraform validate in $dir"
+                terraform validate -no-color
               )
+              echo ""
             fi
           done
+
