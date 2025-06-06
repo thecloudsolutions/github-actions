@@ -8,6 +8,21 @@ on:
 
 jobs:
   terraform-fmt:
-    uses: thecloudsolutions/github-actions/.github/workflows/fmt.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_fmt.yml@main
+    with:
+      terraform-directory: .
+
+  terraform-validate:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_validate.yml@main
+    with:
+      terraform-directory: .
+
+  terraform-tflint:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_tflint.yml@main
+    with:
+      terraform-directory: .
+
+  terraform-checkov:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_checkov.yml@main
     with:
       terraform-directory: .
