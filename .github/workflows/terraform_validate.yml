@@ -1,0 +1,32 @@
+name: Terraform validate
+
+on:
+  workflow_call:
+    inputs:
+      terraform-directory:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  terraform-validate:
+    name: Run terraform validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.5.5
+
+      - name: Run terraform validate recursively
+        run: |
+          find "${{ inputs.terraform-directory }}" -type d | while read dir; do
+            if ls "$dir"/*.tf > /dev/null 2>&1; then
+              echo "📁 Validating in $dir"
+              (cd "$dir" && terraform init -backend=false -input=false > /dev/null 2>&1 && terraform validate -no-color)
+            fi
+          done

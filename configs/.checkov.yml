@@ -1,0 +1,18 @@
+metadata:
+  id: "CUSTOM_1"  # Unique ID for the policy
+  name: "No Direct Resource Usage"
+  category: "Terraform Best Practices"
+  description: "Discourage direct resource usage in favor of modules."
+
+scope:
+  provider: "terraform"
+
+definition:
+  and:
+    - cond_type: "attribute"
+      attribute: "resource"
+      operator: "exists"
+    - cond_type: "attribute"
+      attribute: "module"
+      operator: "not_exists"
+      

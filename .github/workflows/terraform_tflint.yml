@@ -1,0 +1,35 @@
+name: Terraform TFLint
+
+on:
+  workflow_call:
+    inputs:
+      terraform-directory:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  tflint:
+    name: Run TFLint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Copy .tflint.hcl config
+        run: cp configs/tflint/.tflint.hcl .tflint.hcl
+
+      - name: Run TFLint recursively
+        run: |
+          find "${{ inputs.terraform-directory }}" -type d -exec sh -c '
+            for dir do
+              if ls "$dir"/*.tf > /dev/null 2>&1; then
+                echo "🔍 Running TFLint in $dir"
+                (cd "$dir" && tflint) || exit 1
+              fi
+            done
+          ' sh {} +
