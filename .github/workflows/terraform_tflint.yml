@@ -32,12 +32,28 @@ jobs:
               [ "$dir" = "." ] && display_name="the main folder"
               echo "Running TFLint in $display_name"
       
-              # Run TFLint and capture JSON output
-              output=$(cd "$dir" && tflint --format json 2>/dev/null)
-              error_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "ERROR")] | length')
-              warning_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "WARNING")] | length')
-              notice_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "NOTICE")] | length')
+              # Run TFLint
+              raw_output=$(cd "$dir" && tflint --format json 2>/dev/null)
+              if [ -z "$raw_output" ]; then
+                echo "TFLint failed or returned no output in $display_name"
+                EXIT_CODE=1
+                continue
+              fi
       
+              # Ensure JSON is valid
+              echo "$raw_output" | jq empty 2>/dev/null
+              if [ $? -ne 0 ]; then
+                echo "Invalid JSON output from TFLint in $display_name"
+                EXIT_CODE=1
+                continue
+              fi
+      
+              # Extract counts
+              error_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "ERROR")] | length')
+              warning_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "WARNING")] | length')
+              notice_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "NOTICE")] | length')
+      
+              # Report
               if [ "$error_count" -gt 0 ]; then
                 echo "TFLint found errors in $display_name"
                 EXIT_CODE=1
