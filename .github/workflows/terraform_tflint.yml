@@ -20,49 +20,58 @@ jobs:
       - name: Set up TFLint
         uses: terraform-linters/setup-tflint@v4
 
+      - name: Install jq (required for JSON parsing)
+        run: sudo apt-get install -y jq
+
       - name: Copy .tflint.hcl config
         run: cp configs/.tflint.hcl .tflint.hcl
 
-      - name: Run TFLint recursively
+      - name: Run TFLint recursively with structured reporting
+        shell: bash
         run: |
           EXIT_CODE=0
+
           for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
               display_name="$dir"
               [ "$dir" = "." ] && display_name="the main folder"
-              echo "Running TFLint in $display_name"
-      
-              # Run TFLint
-              raw_output=$(cd "$dir" && tflint --format json 2>/dev/null)
-              if [ -z "$raw_output" ]; then
+              echo "🔍 Running TFLint in $display_name"
+
+              # Run TFLint and get JSON output
+              set +e
+              raw_output=$(cd "$dir" && tflint --format json)
+              tflint_exit=$?
+              set -e
+
+              if [ "$tflint_exit" -ne 0 ] || [ -z "$raw_output" ]; then
                 echo "TFLint failed or returned no output in $display_name"
                 EXIT_CODE=1
                 continue
               fi
-      
-              # Ensure JSON is valid
-              echo "$raw_output" | jq empty 2>/dev/null
-              if [ $? -ne 0 ]; then
+
+              # Validate JSON before parsing
+              echo "$raw_output" | jq empty 2>/dev/null || {
                 echo "Invalid JSON output from TFLint in $display_name"
                 EXIT_CODE=1
                 continue
-              fi
-      
-              # Extract counts
+              }
+
               error_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "ERROR")] | length')
               warning_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "WARNING")] | length')
               notice_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "NOTICE")] | length')
-      
-              # Report
+
               if [ "$error_count" -gt 0 ]; then
-                echo "TFLint found errors in $display_name"
+                echo "TFLint found $error_count errors in $display_name"
                 EXIT_CODE=1
               elif [ "$warning_count" -gt 0 ]; then
-                echo "TFLint found warnings in $display_name"
+                echo "TFLint found $warning_count warnings in $display_name"
                 EXIT_CODE=1
               elif [ "$notice_count" -gt 0 ]; then
-                echo "TFLint found notices in $display_name"
+                echo "TFLint found $notice_count notices in $display_name"
+              else
+                echo "No issues found in $display_name"
               fi
             fi
           done
+
           exit $EXIT_CODE
