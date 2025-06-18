@@ -26,29 +26,27 @@ jobs:
       - name: Run TFLint recursively
         run: |
           EXIT_CODE=0
-          find "${{ inputs.terraform-directory }}" -type d -exec sh -c '
-            for dir do
-              if ls "$dir"/*.tf > /dev/null 2>&1; then
-                display_name="$dir"
-                [ "$dir" = "." ] && display_name="the main folder"
-                echo "Running TFLint in $display_name"
+          for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
+            if ls "$dir"/*.tf > /dev/null 2>&1; then
+              display_name="$dir"
+              [ "$dir" = "." ] && display_name="the main folder"
+              echo "Running TFLint in $display_name"
       
-                # Capture JSON output
-                output=$(cd "$dir" && tflint --format json 2>/dev/null)
-                error_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "ERROR")] | length')
-                warning_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "WARNING")] | length')
-                notice_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "NOTICE")] | length')
+              # Run TFLint and capture JSON output
+              output=$(cd "$dir" && tflint --format json 2>/dev/null)
+              error_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "ERROR")] | length')
+              warning_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "WARNING")] | length')
+              notice_count=$(echo "$output" | jq '[.diagnostics[] | select(.severity == "NOTICE")] | length')
       
-                if [ "$error_count" -gt 0 ]; then
-                  echo "TFLint found errors in $display_name"
-                  EXIT_CODE=1
-                elif [ "$warning_count" -gt 0 ]; then
-                  echo "TFLint found warnings in $display_name"
-                  EXIT_CODE=1
-                elif [ "$notice_count" -gt 0 ]; then
-                  echo "TFLint found notices in $display_name"
-                fi
+              if [ "$error_count" -gt 0 ]; then
+                echo "TFLint found errors in $display_name"
+                EXIT_CODE=1
+              elif [ "$warning_count" -gt 0 ]; then
+                echo "TFLint found warnings in $display_name"
+                EXIT_CODE=1
+              elif [ "$notice_count" -gt 0 ]; then
+                echo "TFLint found notices in $display_name"
               fi
-            done
-          ' sh {} +
+            fi
+          done
           exit $EXIT_CODE
