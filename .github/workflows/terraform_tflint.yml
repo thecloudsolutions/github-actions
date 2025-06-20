@@ -39,6 +39,7 @@ jobs:
 
               # Run TFLint and get JSON output
               set +e
+              (cd "$dir" && tflint) || echo "Plain TFLint failed in $display_name"
               raw_output=$(cd "$dir" && tflint --format json)
               tflint_exit=$?
               set -e
