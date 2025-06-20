@@ -17,13 +17,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up TFLint
-        uses: terraform-linters/setup-tflint@v4
+      - name: Install latest TFLint
+        run: |
+          curl -sSL https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          sudo mv tflint /usr/local/bin/tflint
+          tflint --version  # Confirm installed version
 
       - name: Copy .tflint.hcl config
         run: cp configs/.tflint.hcl .tflint.hcl
 
-      - name: Run TFLint recursively
+      - name: Run TFLint recursively (fail only on errors)
         shell: bash
         run: |
           set -e
