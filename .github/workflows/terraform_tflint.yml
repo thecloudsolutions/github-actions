@@ -20,42 +20,54 @@ jobs:
       - name: Set up TFLint
         uses: terraform-linters/setup-tflint@v4
 
-      - name: Install jq (required for JSON parsing)
+      - name: Install jq
         run: sudo apt-get install -y jq
 
-      - name: Copy .tflint.hcl config
+      - name: Copy TFLint config
         run: cp configs/.tflint.hcl .tflint.hcl
 
-      - name: Run TFLint recursively with structured reporting
+      - name: Run TFLint recursively
         shell: bash
         run: |
           EXIT_CODE=0
 
-          for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
+          find "${{ inputs.terraform-directory }}" -type d | while read -r dir; do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
               display_name="$dir"
               [ "$dir" = "." ] && display_name="the main folder"
               echo "Running TFLint in $display_name"
 
-              # Run TFLint with JSON output
-              set +e
-              raw_output=$(cd "$dir" && tflint --format json)
-              tflint_exit=$?
-              set -e
+              cd "$dir" || continue
 
-              if [ "$tflint_exit" -ne 0 ] || [ -z "$raw_output" ]; then
-                echo "TFLint failed or returned no output in $display_name"
+              # Run tflint JSON once
+              raw_output=$(tflint --format json 2>tflint_stderr.log)
+              tflint_status=$?
+
+              cd - > /dev/null
+
+              if [ "$tflint_status" -ne 0 ]; then
+                echo "TFLint exited with code $tflint_status in $display_name"
+                cat "$dir/tflint_stderr.log"
                 EXIT_CODE=1
                 continue
               fi
 
-              # Validate JSON before parsing
-              echo "$raw_output" | jq empty 2>/dev/null || {
-                echo "Invalid JSON output from TFLint in $display_name"
+              if [ -z "$raw_output" ]; then
+                echo "TFLint returned no output in $display_name"
                 EXIT_CODE=1
                 continue
-              }
+              fi
 
+              # Check JSON validity
+              echo "$raw_output" | jq empty 2>/dev/null
+              if [ $? -ne 0 ]; then
+                echo "Invalid JSON output from TFLint in $display_name"
+                echo "$raw_output"
+                EXIT_CODE=1
+                continue
+              fi
+
+              # Extract counts
               error_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "ERROR")] | length')
               warning_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "WARNING")] | length')
               notice_count=$(echo "$raw_output" | jq '[.diagnostics[] | select(.severity == "NOTICE")] | length')
