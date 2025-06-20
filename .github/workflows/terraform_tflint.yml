@@ -35,11 +35,10 @@ jobs:
             if ls "$dir"/*.tf > /dev/null 2>&1; then
               display_name="$dir"
               [ "$dir" = "." ] && display_name="the main folder"
-              echo "🔍 Running TFLint in $display_name"
+              echo "Running TFLint in $display_name"
 
-              # Run TFLint and get JSON output
+              # Run TFLint with JSON output
               set +e
-              (cd "$dir" && tflint) || echo "Plain TFLint failed in $display_name"
               raw_output=$(cd "$dir" && tflint --format json)
               tflint_exit=$?
               set -e
