@@ -2,27 +2,33 @@ name: PR Terraform Check
 
 on:
   pull_request:
-    paths:
-      - '**.tf'
-      - '**.tfvars'
 
 jobs:
+  terraform-structure:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_fmt.yml@main
+    with:
+      terraform-directory: .
+
   terraform-fmt:
+    needs: terraform-structure
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_fmt.yml@main
     with:
       terraform-directory: .
 
   terraform-validate:
+    needs: terraform-fmt
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_validate.yml@main
     with:
       terraform-directory: .
 
   terraform-tflint:
+    needs: terraform-validate
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_tflint.yml@main
     with:
       terraform-directory: .
 
   terraform-checkov:
+    needs: terraform-validate
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_checkov.yml@main
     with:
       terraform-directory: .
