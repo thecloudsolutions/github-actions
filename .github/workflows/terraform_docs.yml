@@ -1,0 +1,29 @@
+name: Validate Terraform Docs
+
+on:
+  workflow_call:
+    inputs:
+      terraform-directory:
+        required: false
+        type: string
+        default: "."
+
+jobs:
+  validate-docs:
+    name: Validate Terraform Docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate generated Terraform docs
+        working-directory: ${{ inputs.terraform-directory }}
+        run: |
+          cp README.md README.md.original
+          make readme
+          if ! diff -q README.md.original README.md; then
+            echo "README.md is out of date. Please run 'make readme'."
+            exit 1
+          fi
+

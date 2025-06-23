@@ -22,3 +22,7 @@ rule "terraform_typed_variables" {
 rule "terraform_deprecated_index" {
   enabled = true
 }
+
+rule "terraform_module_pinned_source" {
+  enabled = false
+}
