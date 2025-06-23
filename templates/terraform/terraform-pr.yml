@@ -8,9 +8,15 @@ jobs:
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_structure.yml@main
     with:
       terraform-directory: .
-
-  terraform-fmt:
+      
+  terraform-docs:
     needs: terraform-structure
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_docs.yml@main
+    with:
+      terraform-directory: .
+      
+  terraform-fmt:
+    needs: terraform-docs
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_fmt.yml@main
     with:
       terraform-directory: .
