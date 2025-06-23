@@ -45,12 +45,15 @@ jobs:
               [ "$dir" = "." ] && display_name="the main folder"
               echo "Running TFLint in $display_name"
 
-              # Temporarily copy the config into the folder
-              cp .tflint.hcl "$dir/.tflint.hcl"
+              if [ "$dir" != "." ]; then
+                cp .tflint.hcl "$dir/.tflint.hcl"
+              fi
 
               tflint --minimum-failure-severity=error --chdir="$dir" || EXIT_CODE=1
 
-              rm "$dir/.tflint.hcl"
+              if [ "$dir" != "." ]; then
+                rm "$dir/.tflint.hcl"
+              fi
             fi
           done
 
