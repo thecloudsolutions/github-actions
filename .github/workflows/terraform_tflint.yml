@@ -22,18 +22,24 @@ jobs:
 
       - name: Download and apply appropriate TFLint config
         shell: bash
+        # TODO: Remove after repo is public
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           REPO_NAME=$(basename "$GITHUB_REPOSITORY")
-          BASE_URL="https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs"
+          BASE_URL="https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs"
 
           if [[ "$REPO_NAME" == *resource ]]; then
-            echo "Using resource-specific TFLint config"
-            curl -sSL "$BASE_URL/.tflint_resources.hcl" -o .tflint.hcl
+            FILE=".tflint_resources.hcl"
           else
-            echo "Using module-specific TFLint config"
-            curl -sSL "$BASE_URL/.tflint_modules.hcl" -o .tflint.hcl
+            FILE=".tflint_modules.hcl"
           fi
 
+          echo "Downloading $FILE from private repo"
+          curl -sSL -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3.raw" \
+            "$BASE_URL/$FILE" -o .tflint.hcl
+            
       - name: Run TFLint recursively (only fail on errors)
         shell: bash
         run: |
