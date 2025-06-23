@@ -1,7 +1,3 @@
-config {
-  strict = true
-}
-
 plugin "terraform" {
   enabled = true
 }
