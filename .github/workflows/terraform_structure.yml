@@ -36,3 +36,4 @@ jobs:
           else
             echo "All .tf files are allowed."
           fi
+          
