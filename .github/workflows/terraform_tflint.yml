@@ -20,24 +20,24 @@ jobs:
       - name: Set up TFLint
         uses: terraform-linters/setup-tflint@v4
 
-      - name: Determine repo type and apply appropriate TFLint config
+      - name: Download and apply appropriate TFLint config
         shell: bash
         run: |
           REPO_NAME=$(basename "$GITHUB_REPOSITORY")
+          BASE_URL="https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs"
 
           if [[ "$REPO_NAME" == *resource ]]; then
             echo "Using resource-specific TFLint config"
-            cp configs/.tflint_resources.hcl .tflint.hcl
+            curl -sSL "$BASE_URL/.tflint_resources.hcl" -o .tflint.hcl
           else
             echo "Using module-specific TFLint config"
-            cp configs/.tflint_modules.hcl .tflint.hcl
+            curl -sSL "$BASE_URL/.tflint_modules.hcl" -o .tflint.hcl
           fi
 
       - name: Run TFLint recursively (only fail on errors)
         shell: bash
         run: |
           EXIT_CODE=0
-          CONFIG_PATH="configs/.tflint.hcl"
 
           for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
@@ -45,8 +45,8 @@ jobs:
               [ "$dir" = "." ] && display_name="the main folder"
               echo "Running TFLint in $display_name"
 
-              # Temporarily copy the config into the folder if it's not already there
-              cp "$CONFIG_PATH" "$dir/.tflint.hcl"
+              # Temporarily copy the config into the folder
+              cp .tflint.hcl "$dir/.tflint.hcl"
 
               tflint --minimum-failure-severity=error --chdir="$dir" || EXIT_CODE=1
 
