@@ -5,7 +5,7 @@ on:
 
 jobs:
   terraform-structure:
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_fmt.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_structure.yml@main
     with:
       terraform-directory: .
 
@@ -21,14 +21,16 @@ jobs:
     with:
       terraform-directory: .
 
-  terraform-tflint:
-    needs: terraform-validate
+  terraform-tflint:  
+    #TODO: add needs when repos are public
+    #needs: terraform-validate
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_tflint.yml@main
     with:
       terraform-directory: .
 
   terraform-checkov:
-    needs: terraform-validate
+    ##TODO: add needs when repos are public
+    #needs: terraform-validate
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_checkov.yml@main
     with:
       terraform-directory: .
