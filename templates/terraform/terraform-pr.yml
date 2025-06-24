@@ -33,6 +33,8 @@ jobs:
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_tflint.yml@main
     with:
       terraform-directory: .
+    secrets:
+      GH_PAT: ${{ secrets.GH_PAT }}
 
   terraform-checkov:
     ##TODO: add needs when repos are public
