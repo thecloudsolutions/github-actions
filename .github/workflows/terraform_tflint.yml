@@ -7,7 +7,9 @@ on:
         required: false
         type: string
         default: "."
-
+    secrets:
+      GH_PAT:
+        required: true
 jobs:
   tflint:
     name: Run TFLint
@@ -24,7 +26,7 @@ jobs:
         shell: bash
         # TODO: Remove after repo is public
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           REPO_NAME=$(basename "$GITHUB_REPOSITORY")
           BASE_URL="https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs"
