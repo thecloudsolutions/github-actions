@@ -53,15 +53,9 @@ jobs:
               [ "$dir" = "." ] && display_name="the main folder"
               echo "Running TFLint in $display_name"
 
-              if [ "$dir" != "." ]; then
-                cp .tflint.hcl "$dir/.tflint.hcl"
-              fi
-
+              cp .tflint.hcl "$dir/.tflint.hcl"
               tflint --minimum-failure-severity=error --chdir="$dir" || EXIT_CODE=1
-
-              if [ "$dir" != "." ]; then
-                rm "$dir/.tflint.hcl"
-              fi
+              rm "$dir/.tflint.hcl"
             fi
           done
 
