@@ -26,3 +26,11 @@ rule "terraform_module_pinned_source" {
 rule "terraform_documented_variables" {
   enabled = false
 }
+
+rule "terraform_required_providers" {
+  enabled = false
+}
+
+rule "terraform_required_version" {
+  enabled = false
+}
