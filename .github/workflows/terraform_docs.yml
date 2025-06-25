@@ -23,6 +23,7 @@ jobs:
           cp README.md README.md.original
           make readme
           if ! diff -q README.md.original README.md; then
+            diff -u README.md.original README.md
             echo "README.md is out of date. Please run 'make readme'."
             exit 1
           fi
