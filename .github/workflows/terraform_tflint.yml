@@ -41,19 +41,14 @@ jobs:
           curl -sSL -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3.raw" \
             "$BASE_URL/$FILE" -o .tflint.hcl
-          echo "===== Downloaded .tflint.hcl content ====="
-          cat .tflint.hcl
             
-      - name: Run TFLint only in changed folders (only fail on errors)
+      - name: Run TFLint recursively (only fail on errors)
         shell: bash
         run: |
           EXIT_CODE=0
 
-          # Get changed .tf files in PR
-          CHANGED_DIRS=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep '\.tf$' | xargs -n1 dirname | sort -u)
-
-          for dir in $CHANGED_DIRS; do
-            if [ -d "$dir" ]; then
+          for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
+            if ls "$dir"/*.tf > /dev/null 2>&1; then
               display_name="$dir"
               [ "$dir" = "." ] && display_name="the main folder"
               echo "Running TFLint in $display_name"
