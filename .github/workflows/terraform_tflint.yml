@@ -36,7 +36,10 @@ jobs:
           curl -sSL -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3.raw" \
             "$BASE_URL/$FILE" -o .tflint.hcl
-            
+
+          echo "Downloaded .tflint.hcl contents:"
+          cat .tflint.hcl
+          
       - name: Run TFLint recursively (only fail on errors)
         shell: bash
         run: |
