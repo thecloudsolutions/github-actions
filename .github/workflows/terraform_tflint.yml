@@ -30,12 +30,7 @@ jobs:
         run: |
           REPO_NAME=$(basename "$GITHUB_REPOSITORY")
           BASE_URL="https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs"
-
-          if [[ "$REPO_NAME" == *resource ]]; then
-            FILE=".tflint_resources.hcl"
-          else
-            FILE=".tflint_modules.hcl"
-          fi
+          FILE=".tflint_resources.hcl"
 
           echo "Downloading $FILE from private repo"
           curl -sSL -H "Authorization: token $GH_TOKEN" \
