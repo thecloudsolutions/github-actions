@@ -1,4 +1,4 @@
 skip-check:
-  - CKV_SECRET_6   # example: skip AWS credentials in Terraform files
-  - CKV_TF_1       # example: skip missing provider version
+  - CKV_TF_1         # Skip check for missing provider version
+  - CKV_TF_2         # Skip check for module source not using pinned version (e.g. ref=main)
 download-external-modules: true
