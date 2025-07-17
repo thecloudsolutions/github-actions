@@ -8,6 +8,10 @@ on:
         type: string
         default: "."
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   checkov:
     name: Run Checkov
@@ -24,6 +28,15 @@ jobs:
 
       - name: Install Checkov
         run: pip install checkov
+
+      - name: Download centralized Checkov config
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          curl -sSL -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github.v3.raw" \
+            https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs/.checkov.yml \
+            -o .checkov.yml
 
       - name: Run Checkov with custom policy
         run: |
