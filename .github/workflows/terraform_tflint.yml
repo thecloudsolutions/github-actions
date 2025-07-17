@@ -10,6 +10,7 @@ on:
     secrets:
       GH_PAT:
         required: true
+
 jobs:
   tflint:
     name: Run TFLint
@@ -24,22 +25,16 @@ jobs:
 
       - name: Download and apply appropriate TFLint config
         shell: bash
-        # TODO: Remove after repo is public
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          REPO_NAME=$(basename "$GITHUB_REPOSITORY")
-          BASE_URL="https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs"
-          FILE=".tflint_resources.hcl"
-
-          echo "Downloading $FILE from private repo"
           curl -sSL -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github.v3.raw" \
-            "$BASE_URL/$FILE" -o .tflint.hcl
+            https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs/.tflint.hcl \
+            -o .tflint.hcl
 
-          echo "Downloaded .tflint.hcl contents:"
           cat .tflint.hcl
-          
+
       - name: Run TFLint recursively (only fail on errors)
         shell: bash
         run: |
