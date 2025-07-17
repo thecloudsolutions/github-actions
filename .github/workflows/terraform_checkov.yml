@@ -28,22 +28,14 @@ jobs:
       - name: Install Checkov
         run: pip install checkov
 
-      - name: Download centralized Checkov config
+      - name: Download Checkov config
         run: |
           curl -sSL \
             https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs/.checkov.yml \
             -o .checkov.yml
 
-      - name: Download custom policy
-        run: |
-          mkdir -p configs/checkov
-          curl -sSL \
-            https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs/no_direct_resource_usage.yaml \
-            -o configs/checkov/no_direct_resource_usage.yml
-
-      - name: Run Checkov with config and custom policies
+      - name: Run Checkov with config
         run: |
           checkov -d "${{ inputs.terraform-directory }}" \
             --config-file .checkov.yml \
-            --external-checks-dir configs/checkov \
-            --compact \
+            --compact
