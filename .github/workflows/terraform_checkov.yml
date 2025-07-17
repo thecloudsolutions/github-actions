@@ -47,4 +47,3 @@ jobs:
             --config-file .checkov.yml \
             --external-checks-dir configs/checkov \
             --compact \
-            --download-external-modules true
