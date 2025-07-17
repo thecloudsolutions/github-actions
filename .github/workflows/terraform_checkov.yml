@@ -10,7 +10,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   checkov:
@@ -30,12 +29,9 @@ jobs:
         run: pip install checkov
 
       - name: Download centralized Checkov config
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          curl -sSL -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github.v3.raw" \
-            https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs/.checkov.yml \
+          curl -sSL \
+            https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs/.checkov.yml \
             -o .checkov.yml
 
       - name: Run Checkov with custom policy
@@ -43,4 +39,5 @@ jobs:
           checkov -d "${{ inputs.terraform-directory }}" \
             --external-checks-dir configs/checkov \
             --compact \
-            --download-external-modules true
+            --download-external-modules true \
+            --config-file .checkov.yml
