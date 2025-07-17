@@ -3,6 +3,9 @@ name: PR Terraform Check
 on:
   pull_request:
 
+permissions:
+  contents: read
+  
 jobs:
   terraform-structure:
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_structure.yml@main
