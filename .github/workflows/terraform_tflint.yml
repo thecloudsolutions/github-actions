@@ -7,9 +7,6 @@ on:
         required: false
         type: string
         default: "."
-    secrets:
-      GH_PAT:
-        required: true
 
 jobs:
   tflint:
@@ -23,26 +20,19 @@ jobs:
       - name: Set up TFLint
         uses: terraform-linters/setup-tflint@v4
 
-      - name: Download and apply appropriate TFLint config
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT }}
+      - name: Download centralized TFLint config
         run: |
-          curl -sSL -H "Authorization: token $GH_TOKEN" \
-            -H "Accept: application/vnd.github.v3.raw" \
-            https://api.github.com/repos/thecloudsolutions/github-actions/contents/.github/configs/.tflint.hcl \
+          curl -sSL \
+            https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs/.tflint.hcl \
             -o .tflint.hcl
 
       - name: Run TFLint recursively (only fail on errors)
-        shell: bash
         run: |
           EXIT_CODE=0
 
           for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
-              display_name="$dir"
-              [ "$dir" = "." ] && display_name="the main folder"
-              echo "Running TFLint in $display_name"
+              echo "Running TFLint in $dir"
 
               if [ "$dir" != "." ]; then
                 cp .tflint.hcl "$dir/.tflint.hcl"
