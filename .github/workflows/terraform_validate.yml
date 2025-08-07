@@ -21,9 +21,6 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.5.5
-          
-      - name: Print working directory
-        run: pwd
         
       - name: Run terraform validate recursively
         run: |
