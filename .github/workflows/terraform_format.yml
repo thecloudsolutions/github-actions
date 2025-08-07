@@ -1,4 +1,4 @@
-name: Terraform FMT
+name: Terraform format
 
 on:
   workflow_call:
@@ -9,8 +9,8 @@ on:
         default: "."
 
 jobs:
-  terraform-fmt:
-    name: Run terraform fmt
+  terraform-format:
+    name: Run terraform format
     runs-on: ubuntu-latest
 
     steps:
@@ -22,5 +22,5 @@ jobs:
         with:
           terraform_version: 1.5.5
 
-      - name: Run terraform fmt
+      - name: Run terraform format
         run: terraform fmt -recursive "${{ inputs.terraform-directory }}"
