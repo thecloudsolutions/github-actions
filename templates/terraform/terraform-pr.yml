@@ -1,4 +1,4 @@
-name: PR Terraform Check
+name: Terraform PR Check
 
 on:
   pull_request:
@@ -9,37 +9,23 @@ permissions:
 jobs:
   terraform-structure:
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_structure.yml@main
-    with:
-      terraform-directory: .
       
   terraform-docs:
     needs: terraform-structure
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_docs.yml@main
-    with:
-      terraform-directory: .
       
-  terraform-fmt:
+  terraform-format:
     needs: terraform-docs
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_fmt.yml@main
-    with:
-      terraform-directory: .
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_format.yml@main
 
   terraform-validate:
-    needs: terraform-fmt
+    needs: terraform-format
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_validate.yml@main
-    with:
-      terraform-directory: .
 
   terraform-tflint:  
-    #TODO: add needs when repos are public
-    #needs: terraform-validate
+    needs: terraform-validate
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_tflint.yml@main
-    with:
-      terraform-directory: .
 
   terraform-checkov:
-    ##TODO: add needs when repos are public
-    #needs: terraform-validate
+    needs: terraform-validate
     uses: thecloudsolutions/github-actions/.github/workflows/terraform_checkov.yml@main
-    with:
-      terraform-directory: .
