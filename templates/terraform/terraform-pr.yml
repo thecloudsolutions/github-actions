@@ -1,37 +1,37 @@
 name: Terraform PR Check
 on:
-  pull_request:
+  pull-request:
 permissions:
   contents: read
   pull-requests: write
   
 jobs:
   terraform-structure:
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_structure.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-structure.yml@main
       
   terraform-docs:
     needs: terraform-structure
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_docs.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-docs.yml@main
       
   terraform-format:
     needs: terraform-docs
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_format.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-format.yml@main
     
   terraform-validate:
     needs: terraform-format
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_validate.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-validate.yml@main
     
   terraform-tflint:  
     needs: terraform-validate
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_tflint.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-tflint.yml@main
     
   terraform-checkov:
     needs: terraform-validate
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_checkov.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-checkov.yml@main
 
   terraform-comment:
     needs: [terraform-structure, terraform-docs, terraform-format, terraform-validate, terraform-tflint, terraform-checkov]
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_comment.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
     with:
       step-name: "All Terraform Validations"
       step-result: "success"
