@@ -1,6 +1,6 @@
 name: Terraform PR Check
 on:
-  pull-request:
+  pull_request:
 permissions:
   contents: read
   pull-requests: write
@@ -36,3 +36,4 @@ jobs:
       step-name: "All Terraform Validations"
       step-result: "success"
       success-message: "🎉 All checks passed! Your PR is ready to merge! 🚀\n\n✅ Structure validation\n✅ Documentation validation\n✅ Format validation\n✅ Terraform validation\n✅ TFLint validation\n✅ Checkov security scan"
+      
