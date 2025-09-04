@@ -1,57 +1,58 @@
-name: Terraform PR Comment
+name: Terraform validate
+
 on:
   workflow_call:
     inputs:
-      step-name:
-        required: true
-        type: string
-        description: "Name of the validation step"
-      step-result:
-        required: true
-        type: string
-        description: "Result of the step (success or failure)"
-      success-message:
+      terraform-directory:
         required: false
         type: string
-        default: "Validation passed successfully."
-        description: "Message to show on success"
-      failure-message:
-        required: false
-        type: string
-        default: "Validation failed. Please check the logs for details."
-        description: "Message to show on failure"
+        default: "."
 
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
-  comment:
-    name: Add PR Comment
+  terraform-validate:
+    name: Run terraform validate
     runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate-check.outcome }}
+
     steps:
-      - name: Comment on PR - Success
-        if: inputs.step-result == 'success'
-        uses: actions/github-script@v7
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
-          script: |
-            const body = `✅ **${{ inputs.step-name }} Passed** - ${{ inputs.success-message }}`;
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
-      
-      - name: Comment on PR - Failure  
-        if: inputs.step-result == 'failure'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const body = `❌ **${{ inputs.step-name }} Failed** - ${{ inputs.failure-message }}`;
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: body
-            });
+          terraform_version: 1.5.5
+        
+      - name: Run terraform validate recursively
+        id: validate-check
+        run: |
+          find . -type d | while read dir; do
+            if ls "$dir"/*.tf > /dev/null 2>&1; then
+              echo "Validating in $dir"
+              (
+                cd "$dir"
+          
+                echo "Running terraform init in $dir"
+                terraform init -backend=false -input=false
+          
+                echo "Running terraform validate in $dir"
+                terraform validate -no-color
+              )
+              echo ""
+            fi
+          done
+
+  comment:
+    needs: terraform-validate
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform_comment.yml@main
+    with:
+      step-name: "Terraform Validation"
+      step-result: ${{ needs.terraform-validate.outputs.result }}
+      success-message: "Configuration is valid."
+      failure-message: "Terraform configuration is invalid. Please run `terraform validate` locally and fix the issues."
