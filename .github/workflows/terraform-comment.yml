@@ -35,25 +35,23 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const stepName = `${{ inputs.step-name }}`;
-            const successMessage = `${{ inputs.success-message }}`;
-            github.rest.issues.createComment({
+            const body = `✅ **${{ inputs.step-name }} Passed** - ${{ inputs.success-message }}`;
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `✅ **${stepName} Passed** - ${successMessage}`
-            })
+              body: body
+            });
       
       - name: Comment on PR - Failure  
         if: inputs.step-result == 'failure'
         uses: actions/github-script@v7
         with:
           script: |
-            const stepName = `${{ inputs.step-name }}`;
-            const failureMessage = `${{ inputs.failure-message }}`;
-            github.rest.issues.createComment({
+            const body = `❌ **${{ inputs.step-name }} Failed** - ${{ inputs.failure-message }}`;
+            await github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `❌ **${stepName} Failed** - ${failureMessage}`
-            })
+              body: body
+            });
