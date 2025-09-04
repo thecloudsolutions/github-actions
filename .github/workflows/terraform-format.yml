@@ -7,11 +7,15 @@ on:
         required: false
         type: string
         default: "."
+permissions:
+  contents: read
 
 jobs:
   terraform-format:
     name: Run terraform format
     runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.format-check.outcome }}
 
     steps:
       - name: Checkout repository
@@ -23,4 +27,15 @@ jobs:
           terraform_version: 1.5.5
 
       - name: Run terraform format
+        id: format-check
         run: terraform fmt -recursive "${{ inputs.terraform-directory }}"
+
+  comment:
+    needs: terraform-format
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
+    with:
+      step-name: "Terraform Format Validation"
+      step-result: ${{ needs.terraform-format.outputs.result }}
+      success-message: "Code is properly formatted."
+      failure-message: "Code formatting issues found. Please run `terraform fmt` to fix formatting."

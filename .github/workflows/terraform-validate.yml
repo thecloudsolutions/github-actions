@@ -8,10 +8,15 @@ on:
         type: string
         default: "."
 
+permissions:
+  contents: read
+
 jobs:
   terraform-validate:
     name: Run terraform validate
     runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.validate-check.outcome }}
 
     steps:
       - name: Checkout repository
@@ -23,6 +28,7 @@ jobs:
           terraform_version: 1.5.5
         
       - name: Run terraform validate recursively
+        id: validate-check
         run: |
           find . -type d | while read dir; do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
@@ -40,3 +46,12 @@ jobs:
             fi
           done
 
+  comment:
+    needs: terraform-validate
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
+    with:
+      step-name: "Terraform Validation"
+      step-result: ${{ needs.terraform-validate.outputs.result }}
+      success-message: "Configuration is valid."
+      failure-message: "Terraform configuration is invalid. Please run `terraform validate` locally and fix the issues."
