@@ -50,7 +50,7 @@ jobs:
   comment:
     needs: terraform-validate
     if: always()
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform_comment.yml@main
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
     with:
       step-name: "Terraform Validation"
       step-result: ${{ needs.terraform-validate.outputs.result }}
