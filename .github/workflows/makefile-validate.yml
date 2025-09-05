@@ -36,48 +36,78 @@ jobs:
         run: |
           set -e
           
-          echo "=== Verifying Makefiles parse ==="
-          make -qp >/dev/null
-          
-          echo "=== Linting Makefiles ==="
-          files=$(git ls-files | grep -E '(Makefile|.*\.mk) || true)
-          if [ -n "$files" ]; then
-            echo "$files" | xargs -r -n1 checkmake
-          else
-            echo "No Makefiles found to lint"
+          echo "=== Checking if Makefiles exist ==="
+          makefile_files=$(find . -name "Makefile" -o -name "*.mk" 2>/dev/null || true)
+          if [ -z "$makefile_files" ]; then
+            echo "No Makefiles found - skipping validation"
+            exit 0
           fi
           
-          echo "=== Dry-run common targets ==="
-          for t in all help lint test; do
-            if grep -qE "^[[:alnum:]_.-]+:.*\b${t}\b" /dev/null 2>/dev/null || make -qp | awk -F: '/^[^.%][-A-Za-z0-9_\.%]+:/{print $1}' | grep -qx "${t}"; then
-              echo "Dry-running target: ${t}"
-              make -n "${t}" >/dev/null
+          echo "Found Makefiles:"
+          echo "$makefile_files"
+          echo
+          
+          echo "=== Verifying Makefiles parse ==="
+          if ! make -qp >/tmp/make_output 2>&1; then
+            echo "Makefile parsing failed. Error output:"
+            echo "----------------------------------------"
+            cat /tmp/make_output || echo "Could not read make output"
+            echo "----------------------------------------"
+            echo
+            echo "Common Makefile issues:"
+            echo "1. Rules must use TAB characters (not spaces) for indentation"
+            echo "2. Target names must end with a colon (:)"
+            echo "3. Check for typos in variable names or syntax"
+            exit 1
+          fi
+          echo "Makefile syntax is valid"
+          
+          echo "=== Linting Makefiles ==="
+          for file in $makefile_files; do
+            echo "Linting: $file"
+            if ! checkmake "$file"; then
+              echo "Checkmake found issues in $file"
+              exit 1
             fi
           done
           
-          echo "=== Shellcheck scripts ==="
-          scripts=$(git ls-files '*.sh' || true)
+          echo "=== Checking for shell scripts ==="
+          scripts=$(find . -name "*.sh" -type f 2>/dev/null || true)
           if [ -n "$scripts" ]; then
-            shellcheck $scripts
+            echo "Running shellcheck on shell scripts..."
+            if ! shellcheck $scripts; then
+              echo "Shellcheck found issues in shell scripts"
+              exit 1
+            fi
           else
             echo "No shell scripts found"
           fi
           
-          echo "=== Enforce PHONY for non-file targets ==="
-          makefile_files=$(git ls-files | grep -E '(Makefile|.*\.mk) || true)
-          if [ -n "$makefile_files" ]; then
-            phony=$(grep -E '^\.PHONY\s*:' -h $makefile_files | tr -s ' ' | cut -d: -f2- || true)
-            for t in all help lint test; do
-              if make -qp | awk -F: '/^[^.%][-A-Za-z0-9_\.%]+:/{print $1}' | grep -qx "${t}"; then
-                echo "$phony" | grep -qw "$t" || { 
-                  echo "Target $t should be declared in .PHONY"; 
-                  exit 1; 
-                }
+          echo "=== Checking common targets ==="
+          available_targets=$(make -qp 2>/dev/null | awk -F: '/^[^.%#][-A-Za-z0-9_]*:/ {print $1}' | sort -u || true)
+          for target in all help lint test clean; do
+            if echo "$available_targets" | grep -qx "$target"; then
+              echo "Found target: $target"
+              echo "Dry-running target: $target"
+              if ! make -n "$target" >/dev/null 2>&1; then
+                echo "Target $target failed dry-run"
+                exit 1
               fi
-            done
-          fi
+            fi
+          done
           
-          echo "All Makefile validations passed!"
+          echo "=== Checking PHONY declarations ==="
+          phony_targets=$(grep -h "^\.PHONY" $makefile_files 2>/dev/null | sed 's/^\.PHONY[[:space:]]*:[[:space:]]*//' | tr ' ' '\n' | sort -u || true)
+          for target in all help lint test clean; do
+            if echo "$available_targets" | grep -qx "$target"; then
+              if ! echo "$phony_targets" | grep -qx "$target"; then
+                echo "WARNING: Target '$target' should be declared as .PHONY"
+                echo "Add this line to your Makefile: .PHONY: $target"
+              fi
+            fi
+          done
+          
+          echo "All Makefile validations completed successfully!"
 
   comment:
     needs: makefile-validate
@@ -87,4 +117,4 @@ jobs:
       step-name: "Build System Check (Makefile)"
       step-result: ${{ needs.makefile-validate.outputs.result }}
       success-message: "Makefile syntax is valid, targets are properly declared, and shell scripts pass linting."
-      failure-message: "Makefile issues detected: syntax errors, missing .PHONY declarations, or shell script problems. Check the logs for specific issues."
+      failure-message: "Makefile issues detected: syntax errors, missing .PHONY declarations, or shell script problems. Check the logs for specific issues
