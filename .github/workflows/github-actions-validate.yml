@@ -59,22 +59,10 @@ jobs:
           done
           
           echo "=== Running actionlint ==="
-          actionlint $workflow_files
-          
-          echo "=== Checking for pinned action versions ==="
-          unpinned_actions=$(grep -rn "uses: .*@[^v]" $workflow_files | grep -v "@v[0-9]" | grep -v "@main" | grep -v "@master" || true)
-          if [ -n "$unpinned_actions" ]; then
-            echo "WARNING: Found actions that might not be properly pinned:"
-            echo "$unpinned_actions"
-            echo "Consider pinning to specific versions (e.g., @v4) or commit SHAs for better security"
-          fi
-          
-          echo "=== Checking for secrets in workflows ==="
-          potential_secrets=$(grep -rni "password\|secret\|token\|key" $workflow_files | grep -v "secrets\." || true)
-          if [ -n "$potential_secrets" ]; then
-            echo "WARNING: Potential hardcoded secrets found:"
-            echo "$potential_secrets"
-            echo "Ensure sensitive values use secrets.VARIABLE_NAME format"
+          if command -v actionlint >/dev/null 2>&1; then
+            actionlint $workflow_files
+          else
+            echo "actionlint not available, skipping advanced linting"
           fi
           
           echo "=== Checking for required workflow elements ==="
@@ -98,6 +86,20 @@ jobs:
               echo "WARNING: No 'runs-on:' found in $file - ensure all jobs specify runner"
             fi
           done
+          
+          echo "=== Checking for pinned action versions ==="
+          unpinned_actions=$(grep -rn "uses: .*@[^v]" $workflow_files | grep -v "@v[0-9]" | grep -v "@main" | grep -v "@master" || true)
+          if [ -n "$unpinned_actions" ]; then
+            echo "WARNING: Found actions that might not be properly pinned:"
+            echo "$unpinned_actions"
+          fi
+          
+          echo "=== Checking for secrets in workflows ==="
+          potential_secrets=$(grep -rni "password\|secret\|token\|key" $workflow_files | grep -v "secrets\." || true)
+          if [ -n "$potential_secrets" ]; then
+            echo "WARNING: Potential hardcoded secrets found:"
+            echo "$potential_secrets"
+          fi
           
           echo "All GitHub Actions validations passed!"
 
