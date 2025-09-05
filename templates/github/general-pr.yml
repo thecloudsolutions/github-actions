@@ -19,5 +19,5 @@ jobs:
     with:
       step-name: "General Project Validation Summary"
       step-result: ${{ (needs.makefile-validate.result == 'success' && needs.github-actions-validate.result == 'success') && 'success' || 'failure' }}
-      success-message: "🎉 All general project checks passed! Your PR is ready to merge! 🚀\\n\\n✅ Makefile validation\\n✅ GitHub Actions validation"
-      failure-message: "Some general project validation jobs failed. Please check the individual step comments above for details."
+      success-message: "🎉 All general checks passed! \\n\\n✅ Makefile validation\\n✅ GitHub Actions validation"
+      failure-message: "Some general validation jobs failed. Please check the individual step comments above for details."

@@ -35,5 +35,6 @@ jobs:
     with:
       step-name: "All Terraform Validations"
       step-result: "success"
-      success-message: "🎉 All checks passed! Your PR is ready to merge! 🚀\n\n✅ Structure validation\n✅ Documentation validation\n✅ Format validation\n✅ Terraform validation\n✅ TFLint validation\n✅ Checkov security scan"
+      success-message: "🎉 All Terraform checks passed! \n\n✅ Structure validation\n✅ Documentation validation\n✅ FMT validation\n✅ Terraform validation\n✅ TFLint validation\n✅ Checkov security scan"
+      failure-message: "Terraform validation incomplete. Review the specific failed checks above and fix the issues before deploying."
       
