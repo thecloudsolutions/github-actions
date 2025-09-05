@@ -1,5 +1,4 @@
 name: Terraform validate
-
 on:
   workflow_call:
     inputs:
@@ -7,22 +6,18 @@ on:
         required: false
         type: string
         default: "."
-
 permissions:
   contents: read
   pull-requests: write
-
 jobs:
   terraform-validate:
     name: Run terraform validate
     runs-on: ubuntu-latest
     outputs:
       result: ${{ steps.validate-check.outcome }}
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -31,18 +26,28 @@ jobs:
       - name: Run terraform validate recursively
         id: validate-check
         run: |
+          set -e
+          ORIGINAL_DIR=$(pwd)
+          
           find . -type d | while read dir; do
             if ls "$dir"/*.tf > /dev/null 2>&1; then
               echo "Validating in $dir"
-              (
-                cd "$dir"
-          
-                echo "Running terraform init in $dir"
-                terraform init -backend=false -input=false
-          
-                echo "Running terraform validate in $dir"
-                terraform validate -no-color
-              )
+              
+              cd "$dir"
+              
+              echo "Running terraform init in $dir"
+              if ! terraform init -backend=false -input=false; then
+                echo "terraform init failed in $dir"
+                exit 1
+              fi
+              
+              echo "Running terraform validate in $dir"
+              if ! terraform validate -no-color; then
+                echo "terraform validate failed in $dir"
+                exit 1
+              fi
+              
+              cd "$ORIGINAL_DIR"
               echo ""
             fi
           done
@@ -55,4 +60,4 @@ jobs:
       step-name: "Terraform Validation"
       step-result: ${{ needs.terraform-validate.outputs.result }}
       success-message: "Configuration is valid."
-      failure-message: "Terraform configuration is invalid. Please run `terraform validate` locally and fix the issues."
+      failure-message: "Configuration is invalid. Please run validation locally and fix the issues."
