@@ -26,8 +26,10 @@ jobs:
       - name: Install actionlint
         run: |
           # Install actionlint for GitHub Actions validation
-          curl -sSL "https://github.com/rhymond/actionlint/releases/latest/download/actionlint_1.6.26_linux_amd64.tar.gz" | tar xz
+          wget -q https://github.com/rhymond/actionlint/releases/download/v1.6.26/actionlint_1.6.26_linux_amd64.tar.gz
+          tar -xzf actionlint_1.6.26_linux_amd64.tar.gz
           sudo mv actionlint /usr/local/bin/
+          rm actionlint_1.6.26_linux_amd64.tar.gz
 
       - name: Validate GitHub Actions workflows
         id: actions-validation
