@@ -1,0 +1,110 @@
+name: GitHub Actions Validation
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: false
+        type: string
+        default: "."
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  github-actions-validate:
+    name: Validate GitHub Actions
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.actions-validation.outcome }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install actionlint
+        run: |
+          # Install actionlint for GitHub Actions validation
+          bash <(curl https://raw.githubusercontent.com/rhymond/actionlint/main/scripts/download-actionlint.bash)
+          sudo mv ./actionlint /usr/local/bin/
+
+      - name: Validate GitHub Actions workflows
+        id: actions-validation
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -e
+          
+          echo "=== Finding GitHub Actions workflow files ==="
+          workflow_files=$(find . -path "*/.github/workflows/*.yml" -o -path "*/.github/workflows/*.yaml" 2>/dev/null || true)
+          
+          if [ -z "$workflow_files" ]; then
+            echo "No GitHub Actions workflow files found"
+            exit 0
+          fi
+          
+          echo "Found workflow files:"
+          echo "$workflow_files"
+          echo
+          
+          echo "=== Validating YAML syntax ==="
+          for file in $workflow_files; do
+            echo "Checking YAML syntax: $file"
+            python3 -c "import yaml; yaml.safe_load(open('$file'))" || {
+              echo "YAML syntax error in $file"
+              exit 1
+            }
+          done
+          
+          echo "=== Running actionlint ==="
+          actionlint $workflow_files
+          
+          echo "=== Checking for pinned action versions ==="
+          unpinned_actions=$(grep -rn "uses: .*@[^v]" $workflow_files | grep -v "@v[0-9]" | grep -v "@main" | grep -v "@master" || true)
+          if [ -n "$unpinned_actions" ]; then
+            echo "WARNING: Found actions that might not be properly pinned:"
+            echo "$unpinned_actions"
+            echo "Consider pinning to specific versions (e.g., @v4) or commit SHAs for better security"
+          fi
+          
+          echo "=== Checking for secrets in workflows ==="
+          potential_secrets=$(grep -rni "password\|secret\|token\|key" $workflow_files | grep -v "secrets\." || true)
+          if [ -n "$potential_secrets" ]; then
+            echo "WARNING: Potential hardcoded secrets found:"
+            echo "$potential_secrets"
+            echo "Ensure sensitive values use secrets.VARIABLE_NAME format"
+          fi
+          
+          echo "=== Checking for required workflow elements ==="
+          for file in $workflow_files; do
+            echo "Checking required elements in: $file"
+            
+            # Check for 'on' trigger
+            if ! grep -q "^on:" "$file"; then
+              echo "ERROR: Missing 'on:' trigger in $file"
+              exit 1
+            fi
+            
+            # Check for jobs section
+            if ! grep -q "^jobs:" "$file"; then
+              echo "ERROR: Missing 'jobs:' section in $file"
+              exit 1
+            fi
+            
+            # Check for runs-on in jobs
+            if ! grep -q "runs-on:" "$file"; then
+              echo "WARNING: No 'runs-on:' found in $file - ensure all jobs specify runner"
+            fi
+          done
+          
+          echo "All GitHub Actions validations passed!"
+
+  comment:
+    needs: github-actions-validate
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
+    with:
+      step-name: "GitHub Actions Validation"
+      step-result: ${{ needs.github-actions-validate.outputs.result }}
+      success-message: "GitHub Actions workflows are properly structured and validated."
+      failure-message: "GitHub Actions validation failed. Please check workflow syntax, linting, and security practices."
