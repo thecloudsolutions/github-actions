@@ -57,7 +57,7 @@ jobs:
     if: always()
     uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
     with:
-      step-name: "Configuration Validation"
+      step-name: "Terraform Configuration Validation"
       step-result: ${{ needs.terraform-validate.outputs.result }}
       success-message: "Configuration is valid."
       failure-message: "Configuration is invalid. Please run validation locally and fix the issues."

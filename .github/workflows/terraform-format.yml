@@ -36,7 +36,7 @@ jobs:
     if: always()
     uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
     with:
-      step-name: "Terraform Format Validation"
+      step-name: "Terraform FMT Validation"
       step-result: ${{ needs.terraform-format.outputs.result }}
       success-message: "Code is properly formatted."
       failure-message: "Code formatting issues found. Please run `terraform fmt` to fix formatting."
