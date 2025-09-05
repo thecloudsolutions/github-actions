@@ -1,0 +1,90 @@
+name: Makefile Validation
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: false
+        type: string
+        default: "."
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  makefile-validate:
+    name: Validate Makefiles
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.makefile-validation.outcome }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make shellcheck
+          curl -sSL https://github.com/mrtazz/checkmake/releases/download/0.2.2/checkmake-0.2.2.linux.amd64 -o /usr/local/bin/checkmake
+          chmod +x /usr/local/bin/checkmake
+
+      - name: Validate Makefiles
+        id: makefile-validation
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          set -e
+          
+          echo "=== Verifying Makefiles parse ==="
+          make -qp >/dev/null
+          
+          echo "=== Linting Makefiles ==="
+          files=$(git ls-files | grep -E '(Makefile|.*\.mk) || true)
+          if [ -n "$files" ]; then
+            echo "$files" | xargs -r -n1 checkmake
+          else
+            echo "No Makefiles found to lint"
+          fi
+          
+          echo "=== Dry-run common targets ==="
+          for t in all help lint test; do
+            if grep -qE "^[[:alnum:]_.-]+:.*\b${t}\b" /dev/null 2>/dev/null || make -qp | awk -F: '/^[^.%][-A-Za-z0-9_\.%]+:/{print $1}' | grep -qx "${t}"; then
+              echo "Dry-running target: ${t}"
+              make -n "${t}" >/dev/null
+            fi
+          done
+          
+          echo "=== Shellcheck scripts ==="
+          scripts=$(git ls-files '*.sh' || true)
+          if [ -n "$scripts" ]; then
+            shellcheck $scripts
+          else
+            echo "No shell scripts found"
+          fi
+          
+          echo "=== Enforce PHONY for non-file targets ==="
+          makefile_files=$(git ls-files | grep -E '(Makefile|.*\.mk) || true)
+          if [ -n "$makefile_files" ]; then
+            phony=$(grep -E '^\.PHONY\s*:' -h $makefile_files | tr -s ' ' | cut -d: -f2- || true)
+            for t in all help lint test; do
+              if make -qp | awk -F: '/^[^.%][-A-Za-z0-9_\.%]+:/{print $1}' | grep -qx "${t}"; then
+                echo "$phony" | grep -qw "$t" || { 
+                  echo "Target $t should be declared in .PHONY"; 
+                  exit 1; 
+                }
+              fi
+            done
+          fi
+          
+          echo "All Makefile validations passed!"
+
+  comment:
+    needs: makefile-validate
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
+    with:
+      step-name: "Makefile Validation"
+      step-result: ${{ needs.makefile-validate.outputs.result }}
+      success-message: "Makefiles are properly structured and validated."
+      failure-message: "Makefile validation failed. Please check syntax, linting, and PHONY declarations."
