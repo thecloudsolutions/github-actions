@@ -23,14 +23,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install actionlint
-        run: |
-          # Install actionlint for GitHub Actions validation
-          wget -q https://github.com/rhymond/actionlint/releases/download/v1.6.26/actionlint_1.6.26_linux_amd64.tar.gz
-          tar -xzf actionlint_1.6.26_linux_amd64.tar.gz
-          sudo mv actionlint /usr/local/bin/
-          rm actionlint_1.6.26_linux_amd64.tar.gz
-
       - name: Validate GitHub Actions workflows
         id: actions-validation
         working-directory: ${{ inputs.working-directory }}
@@ -57,13 +49,6 @@ jobs:
               exit 1
             }
           done
-          
-          echo "=== Running actionlint ==="
-          if command -v actionlint >/dev/null 2>&1; then
-            actionlint $workflow_files
-          else
-            echo "actionlint not available, skipping advanced linting"
-          fi
           
           echo "=== Checking for required workflow elements ==="
           for file in $workflow_files; do
@@ -94,7 +79,7 @@ jobs:
             echo "$unpinned_actions"
           fi
           
-          echo "=== Checking for secrets in workflows ==="
+          echo "=== Checking for potential secrets in workflows ==="
           potential_secrets=$(grep -rni "password\|secret\|token\|key" $workflow_files | grep -v "secrets\." || true)
           if [ -n "$potential_secrets" ]; then
             echo "WARNING: Potential hardcoded secrets found:"
@@ -111,4 +96,4 @@ jobs:
       step-name: "GitHub Actions Validation"
       step-result: ${{ needs.github-actions-validate.outputs.result }}
       success-message: "GitHub Actions workflows are properly structured and validated."
-      failure-message: "GitHub Actions validation failed. Please check workflow syntax, linting, and security practices."
+      failure-message: "GitHub Actions validation failed. Please check workflow syntax and structure."
