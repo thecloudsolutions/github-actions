@@ -1,0 +1,26 @@
+name: General PR Check
+on:
+  pull_request:
+permissions:
+  contents: read
+  pull-requests: write
+  
+jobs:
+  # Makefile validation
+  makefile-validate:
+    uses: thecloudsolutions/github-actions/.github/workflows/makefile-validate.yml@main
+
+  # GitHub Actions validation
+  github-actions-validate:
+    uses: thecloudsolutions/github-actions/.github/workflows/github-actions-validate.yml@main
+
+  # Final comment - only runs if all previous steps succeed
+  final-comment:
+    needs: [makefile-validate, github-actions-validate]
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
+    with:
+      step-name: "Validation Summary"
+      step-result: ${{ (needs.makefile-validate.result == 'success' && needs.github-actions-validate.result == 'success') && 'success' || 'failure' }}
+      success-message: "🎉 All checks passed! Your PR is ready to merge! 🚀\\n\\n✅ Makefile validation\\n✅ GitHub Actions validation"
+      failure-message: "Some validation jobs failed. Please check the individual step comments above for details."
