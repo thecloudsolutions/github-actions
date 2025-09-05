@@ -84,7 +84,7 @@ jobs:
     if: always()
     uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
     with:
-      step-name: "Makefile Validation"
+      step-name: "Build System Check (Makefile)"
       step-result: ${{ needs.makefile-validate.outputs.result }}
-      success-message: "Makefiles are properly structured and validated."
-      failure-message: "Makefile validation failed. Please check syntax, linting, and PHONY declarations."
+      success-message: "Makefile syntax is valid, targets are properly declared, and shell scripts pass linting."
+      failure-message: "Makefile issues detected: syntax errors, missing .PHONY declarations, or shell script problems. Check the logs for specific issues."
