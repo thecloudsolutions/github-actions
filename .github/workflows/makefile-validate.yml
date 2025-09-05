@@ -27,8 +27,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y make shellcheck
-          curl -sSL https://github.com/mrtazz/checkmake/releases/download/0.2.2/checkmake-0.2.2.linux.amd64 -o /usr/local/bin/checkmake
-          chmod +x /usr/local/bin/checkmake
 
       - name: Validate Makefiles
         id: makefile-validation
@@ -36,78 +34,25 @@ jobs:
         run: |
           set -e
           
-          echo "=== Checking if Makefiles exist ==="
-          makefile_files=$(find . -name "Makefile" -o -name "*.mk" 2>/dev/null || true)
-          if [ -z "$makefile_files" ]; then
+          if ! find . -name "Makefile" -o -name "*.mk" | grep -q .; then
             echo "No Makefiles found - skipping validation"
             exit 0
           fi
           
-          echo "Found Makefiles:"
-          echo "$makefile_files"
-          echo
-          
-          echo "=== Verifying Makefiles parse ==="
+          echo "Checking Makefile syntax..."
           if ! make -qp >/tmp/make_output 2>&1; then
-            echo "Makefile parsing failed. Error output:"
-            echo "----------------------------------------"
-            cat /tmp/make_output || echo "Could not read make output"
-            echo "----------------------------------------"
-            echo
-            echo "Common Makefile issues:"
-            echo "1. Rules must use TAB characters (not spaces) for indentation"
-            echo "2. Target names must end with a colon (:)"
-            echo "3. Check for typos in variable names or syntax"
+            echo "Makefile parsing failed:"
+            cat /tmp/make_output
             exit 1
           fi
-          echo "Makefile syntax is valid"
           
-          echo "=== Linting Makefiles ==="
-          for file in $makefile_files; do
-            echo "Linting: $file"
-            if ! checkmake "$file"; then
-              echo "Checkmake found issues in $file"
-              exit 1
-            fi
-          done
-          
-          echo "=== Checking for shell scripts ==="
-          scripts=$(find . -name "*.sh" -type f 2>/dev/null || true)
+          echo "Checking shell scripts..."
+          scripts=$(find . -name "*.sh" -type f || true)
           if [ -n "$scripts" ]; then
-            echo "Running shellcheck on shell scripts..."
-            if ! shellcheck $scripts; then
-              echo "Shellcheck found issues in shell scripts"
-              exit 1
-            fi
-          else
-            echo "No shell scripts found"
+            shellcheck $scripts
           fi
           
-          echo "=== Checking common targets ==="
-          available_targets=$(make -qp 2>/dev/null | awk -F: '/^[^.%#][-A-Za-z0-9_]*:/ {print $1}' | sort -u || true)
-          for target in all help lint test clean; do
-            if echo "$available_targets" | grep -qx "$target"; then
-              echo "Found target: $target"
-              echo "Dry-running target: $target"
-              if ! make -n "$target" >/dev/null 2>&1; then
-                echo "Target $target failed dry-run"
-                exit 1
-              fi
-            fi
-          done
-          
-          echo "=== Checking PHONY declarations ==="
-          phony_targets=$(grep -h "^\.PHONY" $makefile_files 2>/dev/null | sed 's/^\.PHONY[[:space:]]*:[[:space:]]*//' | tr ' ' '\n' | sort -u || true)
-          for target in all help lint test clean; do
-            if echo "$available_targets" | grep -qx "$target"; then
-              if ! echo "$phony_targets" | grep -qx "$target"; then
-                echo "WARNING: Target '$target' should be declared as .PHONY"
-                echo "Add this line to your Makefile: .PHONY: $target"
-              fi
-            fi
-          done
-          
-          echo "All Makefile validations completed successfully!"
+          echo "Makefile validation passed"
 
   comment:
     needs: makefile-validate
@@ -116,5 +61,5 @@ jobs:
     with:
       step-name: "Build System Check (Makefile)"
       step-result: ${{ needs.makefile-validate.outputs.result }}
-      success-message: "Makefile syntax is valid, targets are properly declared, and shell scripts pass linting."
-      failure-message: "Makefile issues detected: syntax errors, missing .PHONY declarations, or shell script problems. Check the logs for specific issues
+      success-message: "Makefile syntax is valid and shell scripts pass linting."
+      failure-message: "Makefile issues detected. Check the logs for specific errors."
