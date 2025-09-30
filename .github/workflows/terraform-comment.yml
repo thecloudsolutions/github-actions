@@ -22,6 +22,7 @@ on:
         description: "Message to show on failure"
 
 permissions:
+  issues: write
   contents: read
   pull-requests: write
 
