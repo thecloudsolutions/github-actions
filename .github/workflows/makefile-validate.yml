@@ -22,10 +22,9 @@ jobs:
         id: makefile-validation
         run: |
           if find . -name "Makefile" -o -name "*.mk" | grep -q .; then
-            make -qp >/tmp/make_output 2>&1 || {
-              echo "Makefile parsing failed:"
-              cat /tmp/make_output
-              exit 1
+            make -n >/dev/null 2>&1 || {
+              echo "Makefile syntax error";
+              exit 1;
             }
           fi
 
