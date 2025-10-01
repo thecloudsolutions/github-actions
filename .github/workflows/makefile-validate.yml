@@ -27,13 +27,3 @@ jobs:
               exit 1;
             }
           fi
-
-  # comment:
-  #   needs: makefile-validate
-  #   if: always()
-  #   uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-  #   with:
-  #     step-name: "Build System Check (Makefile)"
-  #     step-result: ${{ needs.makefile-validate.outputs.result }}
-  #     success-message: "Makefile syntax is valid."
-  #     failure-message: "Makefile issues detected. Check the logs for specific errors."

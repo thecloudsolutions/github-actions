@@ -43,13 +43,4 @@ jobs:
           else
             echo "All .tf files are allowed."
           fi
-
-  comment:
-    needs: enforce-file-names
-    if: always()
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-    with:
-      step-name: "Terraform Structure Validation"
-      step-result: ${{ needs.enforce-file-names.outputs.result }}
-      success-message: "Project structure is correct."
-      failure-message: "Project structure does not meet requirements. Please check the workflow logs for details."
+          

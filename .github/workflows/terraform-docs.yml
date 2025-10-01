@@ -34,13 +34,3 @@ jobs:
             echo "README.md is out of date. Please run 'make readme'."
             exit 1
           fi
-
-  comment:
-    needs: validate-docs
-    if: always()
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-    with:
-      step-name: "Terraform Documentation Validation"
-      step-result: ${{ needs.validate-docs.outputs.result }}
-      success-message: "Documentation is up to date."
-      failure-message: "Documentation is out of date. Please run `make readme` and commit the changes."

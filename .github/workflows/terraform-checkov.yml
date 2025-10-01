@@ -43,13 +43,3 @@ jobs:
           checkov -d "${{ inputs.terraform-directory }}" \
             --config-file .checkov.yml \
             --compact
-
-  comment:
-    needs: checkov
-    if: always()
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-    with:
-      step-name: "Checkov Security Scan"
-      step-result: ${{ needs.checkov.outputs.result }}
-      success-message: "No security issues found in Terraform code."
-      failure-message: "Security issues found in Terraform code. Please review and fix before proceeding."

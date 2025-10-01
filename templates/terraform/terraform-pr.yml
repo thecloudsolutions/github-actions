@@ -34,5 +34,14 @@ jobs:
     with:
       step-name: "Infrastructure Validation Summary"
       step-result: ${{ (needs.terraform-structure.result == 'success' && needs.terraform-docs.result == 'success' && needs.terraform-format.result == 'success' && needs.terraform-validate.result == 'success' && needs.terraform-tflint.result == 'success' && needs.terraform-checkov.result == 'success') && 'success' || 'failure' }}
-      success-message: "🎉 All infrastructure code checks passed! Your Terraform changes are ready to deploy! 🚀\\n\\n✅ File naming conventions\\n✅ Documentation is current\\n✅ Code formatting\\n✅ Syntax validation\\n✅ Code quality (TFLint)\\n✅ Security scan (Checkov)"
-      failure-message: "Infrastructure validation incomplete. Review the specific failed checks above and fix the issues before deploying."
+      success-message: "All infrastructure code checks passed!\n\n✅ File naming conventions\n✅ Documentation is current\n✅ Code formatting\n✅ Syntax validation\n✅ Code quality (TFLint)\n✅ Security scan (Checkov)"
+      failure-message: |
+        Some infrastructure validation checks failed:
+        
+        ${{ needs.terraform-structure.result != 'success' && '❌ File naming conventions failed' || '✅ File naming conventions passed' }}
+        ${{ needs.terraform-docs.result != 'success' && '❌ Documentation check failed' || '✅ Documentation is current' }}
+        ${{ needs.terraform-format.result != 'success' && '❌ Code formatting failed' || '✅ Code formatting passed' }}
+        ${{ needs.terraform-validate.result != 'success' && '❌ Syntax validation failed' || '✅ Syntax validation passed' }}
+        ${{ needs.terraform-tflint.result != 'success' && '❌ Code quality (TFLint) failed' || '✅ Code quality passed' }}
+        ${{ needs.terraform-checkov.result != 'success' && '❌ Security scan (Checkov) failed' || '✅ Security scan passed' }}
+        

@@ -87,13 +87,3 @@ jobs:
           fi
           
           echo "All GitHub Actions validations passed!"
-
-  # comment:
-  #   needs: github-actions-validate
-  #   if: always()
-  #   uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-  #   with:
-  #     step-name: "GitHub Actions Validation"
-      # step-result: ${{ needs.github-actions-validate.outputs.result }}
-      # success-message: "GitHub Actions workflows are properly structured and validated."
-      # failure-message: "GitHub Actions validation failed. Please check workflow syntax and structure."
