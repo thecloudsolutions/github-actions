@@ -15,7 +15,7 @@ permissions:
 jobs:
   github-actions-validate:
     name: Validate GitHub Actions
-    runs-on: ubuntu-latest
+    #runs-on: ubuntu-latest
     outputs:
       result: ${{ steps.actions-validation.outcome }}
 
