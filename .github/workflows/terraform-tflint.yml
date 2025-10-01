@@ -54,13 +54,3 @@ jobs:
           done
 
           exit $EXIT_CODE
-
-  comment:
-    needs: tflint
-    if: always()
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-    with:
-      step-name: "TFLint Validation"
-      step-result: ${{ needs.tflint.outputs.result }}
-      success-message: "No linting issues found."
-      failure-message: "Linting issues found in Terraform code. Please review and fix the reported issues."

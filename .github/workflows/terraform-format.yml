@@ -30,13 +30,3 @@ jobs:
       - name: Run terraform format
         id: format-check
         run: terraform fmt -recursive "${{ inputs.terraform-directory }}"
-
-  comment:
-    needs: terraform-format
-    if: always()
-    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
-    with:
-      step-name: "Terraform FMT Validation"
-      step-result: ${{ needs.terraform-format.outputs.result }}
-      success-message: "Code is properly formatted."
-      failure-message: "Code formatting issues found. Please run `terraform fmt` to fix formatting."
