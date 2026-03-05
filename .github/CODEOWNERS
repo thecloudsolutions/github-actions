@@ -1,0 +1,22 @@
+# Use this file to define teams responsible for Cloud Solutions' repositories.
+# NOTE: The last matching pattern has the highest precedence!
+
+# Default owners for everything
+*                   @thecloudsolutions/engineering @thecloudsolutions/contributors
+
+# Engineering team must review any changes to Makefiles
+**/Makefile         @thecloudsolutions/engineering
+**/Makefile.*       @thecloudsolutions/engineering
+
+# Engineering team must review any changes to GitHub workflows
+.github/*           @thecloudsolutions/engineering
+
+# Contributors and approvers can review changes to infrastructure files and documentation
+**/*.tf             @thecloudsolutions/engineering @thecloudsolutions/contributors @thecloudsolutions/approvers
+README.yaml         @thecloudsolutions/engineering @thecloudsolutions/contributors @thecloudsolutions/approvers
+README.md           @thecloudsolutions/engineering @thecloudsolutions/contributors @thecloudsolutions/approvers
+docs/*.md           @thecloudsolutions/engineering @thecloudsolutions/contributors @thecloudsolutions/approvers
+
+# Admins must review changes to critical configurations
+.github/mergify.yml @thecloudsolutions/admins
+.github/CODEOWNERS  @thecloudsolutions/admins

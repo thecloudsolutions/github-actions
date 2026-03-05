@@ -1,0 +1,119 @@
+{{- defineDatasource "config" .Env.README_YAML | regexp.Replace ".*" "" -}}
+{{- $cfg := ds "config" -}}
+{{- $deprecated := has $cfg "deprecated" -}}
+{{- $repo_name := $cfg.github_repo | regexp.Replace "/" "%2F" -}}
+
+<!-- markdownlint-disable -->
+{{- if $deprecated -}}
+[![deprecated](https://img.shields.io/badge/lifecycle-deprecated-critical)](#deprecated)
+{{- end -}}
+
+{{- if has $cfg "badges" -}}
+{{- range $badge := $cfg.badges }}
+[![{{ $badge.name }}]({{ regexp.Replace "github_repo" $repo_name $badge.image }})]({{ regexp.Replace "github_repo" $repo_name $badge.url }})
+{{- end }}
+{{- end }}
+
+{{- if has $cfg "github_repo" }}
+
+# {{ $cfg.github_repo }}
+
+{{- end }}
+
+[![Cloud Solutions Banner][banner]](https://thecloudsolutions.com/)
+
+[![Sponsor Us](https://img.shields.io/badge/sponsor_us-FF9800?style=for-the-badge)](https://github.com/sponsors/thecloudsolutions)
+[![Hire Us](https://img.shields.io/badge/hire_us-009FD2?style=for-the-badge)](https://thecloudsolutions.com/contact-us)
+[![Maintained By](https://img.shields.io/badge/maintained_by-Cloud_Solutions-6150E8?style=for-the-badge)](https://thecloudsolutions.com/)
+
+{{- if has $cfg "description" }}
+
+## Description
+
+{{ $cfg.description | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "variable_naming" }}
+
+## Variable Naming
+
+{{ $cfg.variable_naming | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "usage" }}
+
+## Usage
+
+{{ $cfg.usage | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "include" -}}
+{{- range $file := $cfg.include -}}
+{{- if (file.Exists $file) }}
+
+{{ file.Read $file | strings.TrimSuffix "\n" }}
+
+{{- end -}}
+{{- end -}}
+{{- end }}
+
+{{- if has $cfg "quick_start" }}
+
+## Quick Start
+
+{{ $cfg.quick_start | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "about_us" }}
+
+## About Us
+
+{{ $cfg.about_us | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "contributing" }}
+
+## Contributing
+
+{{ $cfg.contributing | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "blog" }}
+
+## Blog
+
+{{ $cfg.blog | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if eq $cfg.license "APACHE2" }}
+
+## License
+
+The project is 100% Open Source and licensed under the [APACHE2](LICENSE).
+
+{{- end }}
+
+{{- if has $cfg "trademarks" }}
+
+## Trademarks
+
+{{ $cfg.trademarks | strings.TrimSpace }}
+
+{{- end }}
+
+{{- if has $cfg "copyrights" }}
+
+## Copyrights
+
+{{ $cfg.copyrights | strings.TrimSpace }}
+
+{{- end }}
+
+[banner]: https://github.com/thecloudsolutions/.github/blob/main/profile/banner.png
