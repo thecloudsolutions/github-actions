@@ -1,0 +1,58 @@
+name: Terraform PR Check
+on:
+  pull_request:
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  terraform-structure:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-structure.yml@main
+
+  terraform-docs:
+    needs: terraform-structure
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-docs.yml@main
+
+  terraform-format:
+    needs: terraform-docs
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-format.yml@main
+    with:
+      terraform-version: "1.5.5"
+
+  terraform-validate:
+    needs: terraform-format
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-validate.yml@main
+    with:
+      terraform-version: "1.5.5"
+
+  terraform-tflint:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-tflint.yml@main
+
+  terraform-checkov:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-checkov.yml@main
+
+  terraform-comment:
+    needs:
+      [
+        terraform-structure,
+        terraform-docs,
+        terraform-format,
+        terraform-validate,
+        terraform-tflint,
+        terraform-checkov,
+      ]
+    if: always()
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-comment.yml@main
+    with:
+      step-name: "Infrastructure Validation Summary"
+      step-result: ${{ (needs.terraform-structure.result == 'success' && needs.terraform-docs.result == 'success' && needs.terraform-format.result == 'success' && needs.terraform-validate.result == 'success' && needs.terraform-tflint.result == 'success' && needs.terraform-checkov.result == 'success') && 'success' || 'failure' }}
+      success-message: "All infrastructure code checks passed!\n\n✅ File naming conventions\n✅ Documentation is current\n✅ Code formatting\n✅ Syntax validation\n✅ Code quality (TFLint)\n✅ Security scan (Checkov)"
+      failure-message: |
+        Some infrastructure validation checks failed:
+
+        ${{ needs.terraform-structure.result != 'success' && '❌ File naming conventions failed' || '✅ File naming conventions passed' }}
+        ${{ needs.terraform-docs.result != 'success' && '❌ Documentation check failed' || '✅ Documentation is current' }}
+        ${{ needs.terraform-format.result != 'success' && '❌ Code formatting failed' || '✅ Code formatting passed' }}
+        ${{ needs.terraform-validate.result != 'success' && '❌ Syntax validation failed' || '✅ Syntax validation passed' }}
+        ${{ needs.terraform-tflint.result != 'success' && '❌ Code quality (TFLint) failed' || '✅ Code quality passed' }}
+        ${{ needs.terraform-checkov.result != 'success' && '❌ Security scan (Checkov) failed' || '✅ Security scan passed' }}

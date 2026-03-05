@@ -1,0 +1,56 @@
+name: Terraform TFLint
+
+on:
+  workflow_call:
+    inputs:
+      terraform-directory:
+        required: false
+        type: string
+        default: "."
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  tflint:
+    name: Run TFLint
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.tflint-scan.outcome }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@v4
+
+      - name: Download centralized TFLint config
+        run: |
+          curl -sSL \
+            https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs/.tflint.hcl \
+            -o .tflint.hcl
+
+      - name: Run TFLint recursively (only fail on errors)
+        id: tflint-scan
+        run: |
+          EXIT_CODE=0
+
+          for dir in $(find "${{ inputs.terraform-directory }}" -type d); do
+            if ls "$dir"/*.tf > /dev/null 2>&1; then
+              echo "Running TFLint in $dir"
+
+              if [ "$dir" != "." ]; then
+                cp .tflint.hcl "$dir/.tflint.hcl"
+              fi
+
+              tflint --minimum-failure-severity=error --chdir="$dir" || EXIT_CODE=1
+
+              if [ "$dir" != "." ]; then
+                rm "$dir/.tflint.hcl"
+              fi
+            fi
+          done
+
+          exit $EXIT_CODE

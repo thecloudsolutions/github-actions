@@ -1,0 +1,29 @@
+name: Makefile Validation
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  makefile-validate:
+    name: Validate Makefiles
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.makefile-validation.outcome }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Makefiles
+        id: makefile-validation
+        run: |
+          if find . -name "Makefile" -o -name "*.mk" | grep -q .; then
+            make -n >/dev/null 2>&1 || {
+              echo "Makefile syntax error";
+              exit 1;
+            }
+          fi

@@ -1,0 +1,45 @@
+name: Terraform Checkov
+
+on:
+  workflow_call:
+    inputs:
+      terraform-directory:
+        required: false
+        type: string
+        default: "."
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  checkov:
+    name: Run Checkov
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.checkov-scan.outcome }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install Checkov
+        run: pip install checkov
+
+      - name: Download Checkov config
+        run: |
+          curl -sSL \
+            https://raw.githubusercontent.com/thecloudsolutions/github-actions/main/.github/configs/.checkov.yml \
+            -o .checkov.yml
+
+      - name: Run Checkov with config
+        id: checkov-scan
+        run: |
+          checkov -d "${{ inputs.terraform-directory }}" \
+            --config-file .checkov.yml \
+            --compact
