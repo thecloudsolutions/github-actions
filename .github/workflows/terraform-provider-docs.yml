@@ -1,0 +1,288 @@
+name: Terraform AWS Provider Docs Check
+
+on:
+  workflow_call:
+    inputs:
+      terraform-version-file:
+        description: "Path to the Terraform file containing the AWS provider version."
+        required: false
+        type: string
+        default: "versions.tf"
+
+      resources-path:
+        description: "Directory containing Terraform resource modules."
+        required: false
+        type: string
+        default: "resources"
+
+      python-version:
+        description: "Python version used to run the provider docs comparison script."
+        required: false
+        type: string
+        default: "3.12"
+
+      github-actions-ref:
+        description: "Ref of the thecloudsolutions/github-actions repository used to download the comparison script."
+        required: false
+        type: string
+        default: "main"
+
+      create-issues:
+        description: "Whether to create GitHub issues for changed AWS provider resource documentation."
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-provider-docs:
+    name: Check AWS Provider Resource Docs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Extract current AWS provider version
+        id: current
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          VERSION_FILE="${{ inputs.terraform-version-file }}"
+
+          if [ ! -f "$VERSION_FILE" ]; then
+            echo "Terraform version file not found: ${VERSION_FILE}"
+            exit 1
+          fi
+
+          CURRENT_AWS_PROVIDER_VERSION="$(awk '
+            /source[[:space:]]*=[[:space:]]*"hashicorp\/aws"/ { found=1 }
+            found && /version[[:space:]]*=/ {
+              gsub(/.*version[[:space:]]*=[[:space:]]*"/, "")
+              gsub(/".*/, "")
+              gsub(/^[[:space:]]+|[[:space:]]+$/, "")
+              print
+              exit
+            }
+          ' "$VERSION_FILE")"
+
+          if [ -z "$CURRENT_AWS_PROVIDER_VERSION" ]; then
+            echo "Failed to extract AWS provider version from ${VERSION_FILE}"
+            exit 1
+          fi
+
+          echo "Current AWS provider version: ${CURRENT_AWS_PROVIDER_VERSION}"
+          echo "version=${CURRENT_AWS_PROVIDER_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch latest AWS provider version
+        id: latest
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          LATEST_AWS_PROVIDER_VERSION="$(curl -fsSL https://registry.terraform.io/v1/providers/hashicorp/aws | jq -r '.version')"
+
+          if [ -z "$LATEST_AWS_PROVIDER_VERSION" ] || [ "$LATEST_AWS_PROVIDER_VERSION" = "null" ]; then
+            echo "Failed to fetch latest AWS provider version from Terraform Registry"
+            exit 1
+          fi
+
+          echo "Latest AWS provider version: ${LATEST_AWS_PROVIDER_VERSION}"
+          echo "version=${LATEST_AWS_PROVIDER_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine whether an update is available
+        id: compare
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CURRENT="${{ steps.current.outputs.version }}"
+          LATEST="${{ steps.latest.outputs.version }}"
+
+          if [ "$CURRENT" = "$LATEST" ]; then
+            echo "AWS provider is already up to date (${CURRENT})."
+            echo "update_available=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "AWS provider update detected: ${CURRENT} -> ${LATEST}"
+            echo "update_available=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract AWS resource list
+        id: resources
+        if: steps.compare.outputs.update_available == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          RESOURCES_PATH="${{ inputs.resources-path }}"
+
+          if [ ! -d "$RESOURCES_PATH" ]; then
+            echo "Resources directory not found: ${RESOURCES_PATH}"
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          find "$RESOURCES_PATH" -name "*.tf" -type f -print0 \
+            | xargs -0 --no-run-if-empty grep -hoE 'resource[[:space:]]+"aws_[^"]+"' \
+            | sed -E 's/resource[[:space:]]+"([^"]+)"/\1/' \
+            | sort -u > aws-resources.txt
+
+          if [ ! -s aws-resources.txt ]; then
+            echo "No AWS resources found under ${RESOURCES_PATH}."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Discovered AWS resources:"
+          cat aws-resources.txt
+
+          echo "found=true" >> "$GITHUB_OUTPUT"
+
+      - name: Download AWS provider docs comparison script
+        if: steps.resources.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SCRIPT_URL="https://raw.githubusercontent.com/thecloudsolutions/github-actions/${{ inputs.github-actions-ref }}/tools/terraform/aws-provider-docs/compare.py"
+
+          echo "Downloading comparison script from:"
+          echo "${SCRIPT_URL}"
+
+          curl -fsSL "${SCRIPT_URL}" -o compare-aws-provider-docs.py
+          chmod +x compare-aws-provider-docs.py
+
+      - name: Compare AWS provider documentation
+        id: compare
+        if: steps.resources.outputs.found == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          python compare-aws-provider-docs.py \
+            --current-version "${{ steps.current.outputs.version }}" \
+            --latest-version "${{ steps.latest.outputs.version }}" \
+            --resources-file aws-resources.txt \
+            --output provider-doc-changes.json
+
+          echo "Comparison written to provider-doc-changes.json"
+
+      - name: Upload comparison result
+        if: steps.compare.outcome == 'success'
+        uses: actions/upload-artifact@v7
+        with:
+          name: provider-doc-changes
+          path: provider-doc-changes.json
+          if-no-files-found: ignore
+
+      - name: Create GitHub issues
+        if: steps.compare.outcome == 'success' && inputs.create-issues == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          CHANGE_COUNT="$(jq 'length' provider-doc-changes.json)"
+
+          if [ "$CHANGE_COUNT" -eq 0 ]; then
+            echo "No provider documentation changes found for used AWS resources."
+            exit 0
+          fi
+
+          echo "Found ${CHANGE_COUNT} resource(s) with provider documentation changes."
+
+          IFS=',' read -ra RAW_LABELS <<< "$ISSUE_LABELS"
+          LABEL_ARGS=()
+
+          for LABEL in "${RAW_LABELS[@]}"; do
+            LABEL="$(echo "$LABEL" | xargs)"
+
+            if [ -n "$LABEL" ]; then
+              LABEL_ARGS+=(--label "$LABEL")
+            fi
+          done
+
+          jq -c '.[]' provider-doc-changes.json | while read -r ITEM; do
+            RESOURCE="$(echo "$ITEM" | jq -r '.resource')"
+            CURRENT_VERSION="$(echo "$ITEM" | jq -r '.current_provider_version')"
+            LATEST_VERSION="$(echo "$ITEM" | jq -r '.latest_provider_version')"
+
+            ERROR="$(echo "$ITEM" | jq -r '.error // empty')"
+            CURRENT_DOC_URL="$(echo "$ITEM" | jq -r '.current_documentation_url // empty')"
+            LATEST_DOC_URL="$(echo "$ITEM" | jq -r '.latest_documentation_url // empty')"
+            CURRENT_HASH="$(echo "$ITEM" | jq -r '.current_documentation_hash // empty')"
+            LATEST_HASH="$(echo "$ITEM" | jq -r '.latest_documentation_hash // empty')"
+
+            ISSUE_TITLE="Review ${RESOURCE} after AWS provider update ${CURRENT_VERSION} -> ${LATEST_VERSION}"
+
+            EXISTING_ISSUE_COUNT="$(gh issue list \
+              --state open \
+              --search "\"${ISSUE_TITLE}\"" \
+              --json number \
+              --jq 'length')"
+
+            if [ "$EXISTING_ISSUE_COUNT" -gt 0 ]; then
+              echo "Open issue already exists for ${RESOURCE} and provider ${LATEST_VERSION}. Skipping."
+              continue
+            fi
+
+            ISSUE_BODY_FILE="$(mktemp)"
+
+            if [ -n "$ERROR" ]; then
+              {
+                printf '%s\n\n' "The AWS provider has a newer version available than the version currently defined in the root Terraform provider configuration."
+                printf '%s\n\n' "## Provider versions"
+                printf '%s\n\n' "Current AWS provider version:"
+                printf '```text\n%s\n```\n\n' "$CURRENT_VERSION"
+                printf '%s\n\n' "Latest AWS provider version:"
+                printf '```text\n%s\n```\n\n' "$LATEST_VERSION"
+                printf '%s\n\n' "## Affected resource"
+                printf '```text\n%s\n```\n\n' "$RESOURCE"
+                printf '%s\n\n' "## Comparison result"
+                printf '%s\n\n' "Documentation could not be compared automatically."
+                printf '```text\n%s\n```\n\n' "$ERROR"
+                printf '%s\n' "Please review this resource module manually for the latest AWS provider version."
+              } > "$ISSUE_BODY_FILE"
+            else
+              {
+                printf '%s\n\n' "The AWS provider has a newer version available than the version currently defined in the root Terraform provider configuration."
+                printf '%s\n\n' "## Provider versions"
+                printf '%s\n\n' "Current AWS provider version:"
+                printf '```text\n%s\n```\n\n' "$CURRENT_VERSION"
+                printf '%s\n\n' "Latest AWS provider version:"
+                printf '```text\n%s\n```\n\n' "$LATEST_VERSION"
+                printf '%s\n\n' "## Affected resource"
+                printf '```text\n%s\n```\n\n' "$RESOURCE"
+                printf '%s\n\n' "## Comparison result"
+                printf '%s\n\n' "Documentation changed between provider versions."
+                printf '%s\n\n' "## Documentation links"
+                printf '%s\n\n%s\n\n' "Current version documentation:" "$CURRENT_DOC_URL"
+                printf '%s\n\n%s\n\n' "Latest version documentation:" "$LATEST_DOC_URL"
+                printf '%s\n\n' "## Documentation hashes"
+                printf '%s\n\n' "Current documentation hash:"
+                printf '```text\n%s\n```\n\n' "$CURRENT_HASH"
+                printf '%s\n\n' "Latest documentation hash:"
+                printf '```text\n%s\n```\n\n' "$LATEST_HASH"
+                printf '%s\n' "Please review whether this resource module needs to be updated to support the latest AWS provider version."
+              } > "$ISSUE_BODY_FILE"
+            fi
+
+            gh issue create \
+              --title "$ISSUE_TITLE" \
+              --body-file "$ISSUE_BODY_FILE" \
+              "${LABEL_ARGS[@]}"
+
+            rm -f "$ISSUE_BODY_FILE"
+
+            echo "Created issue for ${RESOURCE}."
+          done

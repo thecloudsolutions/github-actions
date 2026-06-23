@@ -1,0 +1,20 @@
+name: Terraform AWS Provider Docs Check
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  terraform-provider-docs:
+    uses: thecloudsolutions/github-actions/.github/workflows/terraform-provider-docs.yml@main
+    with:
+      terraform-version-file: "versions.tf"
+      resources-path: "resources"
+      python-version: "3.12"
+      github-actions-ref: "main"
+      create-issues: true
