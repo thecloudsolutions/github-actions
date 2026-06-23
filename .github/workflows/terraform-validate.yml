@@ -5,6 +5,7 @@ on:
       terraform-version:
         required: true
         type: string
+
       terraform-directory:
         required: false
         type: string
@@ -21,7 +22,7 @@ jobs:
       result: ${{ steps.validate-check.outcome }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
         with:
