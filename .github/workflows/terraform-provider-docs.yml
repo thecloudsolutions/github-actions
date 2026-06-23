@@ -162,7 +162,7 @@ jobs:
           chmod +x compare-aws-provider-docs.py
 
       - name: Compare AWS provider documentation
-        id: compare
+        id: docs-compare
         if: steps.resources.outputs.found == 'true'
         shell: bash
         run: |
@@ -177,7 +177,7 @@ jobs:
           echo "Comparison written to provider-doc-changes.json"
 
       - name: Upload comparison result
-        if: steps.compare.outcome == 'success'
+        if: steps.docs-compare.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: provider-doc-changes
@@ -185,7 +185,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Create GitHub issues
-        if: steps.compare.outcome == 'success' && inputs.create-issues == true
+        if: steps.docs-compare.outcome == 'success' && inputs.create-issues == true
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
