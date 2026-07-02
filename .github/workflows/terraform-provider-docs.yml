@@ -64,7 +64,7 @@ jobs:
             exit 1
           fi
 
-          CURRENT_AWS_PROVIDER_VERSION="$(awk '
+          RAW_AWS_PROVIDER_VERSION="$(awk '
             /source[[:space:]]*=[[:space:]]*"hashicorp\/aws"/ { found=1 }
             found && /version[[:space:]]*=/ {
               gsub(/.*version[[:space:]]*=[[:space:]]*"/, "")
@@ -75,8 +75,17 @@ jobs:
             }
           ' "$VERSION_FILE")"
 
+          if [ -z "$RAW_AWS_PROVIDER_VERSION" ]; then
+            echo "Failed to extract AWS provider version constraint from ${VERSION_FILE}"
+            exit 1
+          fi
+
+          echo "Raw AWS provider version constraint: ${RAW_AWS_PROVIDER_VERSION}"
+
+          CURRENT_AWS_PROVIDER_VERSION="$(printf '%s\n' "$RAW_AWS_PROVIDER_VERSION" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)"
+
           if [ -z "$CURRENT_AWS_PROVIDER_VERSION" ]; then
-            echo "Failed to extract AWS provider version from ${VERSION_FILE}"
+            echo "Failed to normalize AWS provider version from constraint: ${RAW_AWS_PROVIDER_VERSION}"
             exit 1
           fi
 
