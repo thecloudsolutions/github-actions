@@ -17,13 +17,13 @@ jobs:
     needs: terraform-docs
     uses: thecloudsolutions/github-actions/.github/workflows/terraform-format.yml@main
     with:
-      terraform-version: "1.5.5"
+      terraform-version: "1.16.4"
 
   terraform-validate:
     needs: terraform-format
     uses: thecloudsolutions/github-actions/.github/workflows/terraform-validate.yml@main
     with:
-      terraform-version: "1.5.5"
+      terraform-version: "1.16.4"
 
   terraform-tflint:
     uses: thecloudsolutions/github-actions/.github/workflows/terraform-tflint.yml@main
