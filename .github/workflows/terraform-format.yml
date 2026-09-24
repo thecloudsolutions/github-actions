@@ -34,4 +34,4 @@ jobs:
 
       - name: Run terraform format
         id: format-check
-        run: terraform fmt -recursive "${{ inputs.terraform-directory }}"
+        run: terraform fmt -check -diff -recursive "${{ inputs.terraform-directory }}"
