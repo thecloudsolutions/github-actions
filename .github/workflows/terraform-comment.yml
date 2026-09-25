@@ -32,6 +32,10 @@ jobs:
   comment:
     name: Add PR Comment
     runs-on: ubuntu-latest
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor != 'dependabot[bot]' &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
     steps:
       - name: Comment on PR - Success
         if: inputs.step-result == 'success'
